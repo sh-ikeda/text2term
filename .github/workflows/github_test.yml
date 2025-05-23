@@ -5,9 +5,9 @@ run-name: CI Testing on ${{ github.event_name }}
 
 on:
   push:
-    branches: [ "development" ]
+    branches: [ "dev" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "dev" ]
 
 permissions:
   contents: read
