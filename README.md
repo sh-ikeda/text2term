@@ -72,14 +72,17 @@ dfd = text2term.map_terms(source_terms={"asthma":"disease", "acute bronchitis":[
 text2term supports caching an ontology for repeated use. Here we cache an ontology and give it a name:
 ```python
 mondo = text2term.cache_ontology(ontology_url="http://purl.obolibrary.org/obo/mondo.owl", 
-                                 ontology_acronym="MONDO")
+                                 ontology_acronym="MONDO",
+                                 cache_folder=".cache")  # Optional: specify custom cache location
 ```
 
 The given name acts as a reference. Now we can map strings to the cached ontology by specifying as `target_ontology` the name specified above and the flag `use_cache=True`
 
 ```python
 dfc = text2term.map_terms(source_terms=["asthma", "acute bronchitis"], 
-                          target_ontology="MONDO", use_cache=True)
+                          target_ontology="MONDO", 
+                          use_cache=True,
+                          cache_folder=".cache")  # Optional: specify custom cache location
 ```
 
 More succinctly, we can use the returned `OntologyCache` object `mondo` as such:
@@ -225,25 +228,25 @@ When using the BioPortal or Zooma interfaces, the value for `target_ontology` sh
 text2term supports caching ontologies for faster or repeated mapping to the same ontology. An ontology can be cached using the function:
 
 ```python
-text2term.cache_ontology(ontology_url, ontology_acronym="", base_iris=())
+text2term.cache_ontology(ontology_url, ontology_acronym="", base_iris=(), cache_folder=".cache")
 ```
-This caches a single ontology from a URL or file path, and takes an optional acronym that will be used to reference the cached ontology later. If no acronym is given, the URL is used as the name.
+This caches a single ontology from a URL or file path, and takes an optional acronym that will be used to reference the cached ontology later. If no acronym is given, the URL is used as the name. The `cache_folder` parameter allows specifying a custom location for the cache (defaults to ".cache").
 
 It is also possible to cache multiple ontologies, whose names and URLs are specified in a table formatted as such `acronym,version,url`. An example is provided in [resources/ontologies.csv](https://github.com/rsgoncalves/text2term/blob/main/text2term/resources/ontologies.csv):
 ```python
-text2term.cache_ontology_set(ontology_registry_path)
+text2term.cache_ontology_set(ontology_registry_path, cache_folder=".cache")
 ```
 
-Once an ontology has been cached by either function, it is stored in a cache folder locally, and thus can be referenced even in different Python instances. Users can leverage the cache by using the assigned acronym as the value for the `target_ontology` argument, and setting the `use_cache` argument to `True`.
+Once an ontology has been cached by either function, it is stored in a cache folder locally, and thus can be referenced even in different Python instances. Users can leverage the cache by using the assigned acronym as the value for the `target_ontology` argument, and setting the `use_cache` argument to `True`. The `cache_folder` parameter can be used to specify a custom cache location.
 
 To clear the ontology cache, the following function can be used:
 
 ```python
-text2term.clear_cache(ontology_acronym='')
+text2term.clear_cache(ontology_acronym='', cache_folder=".cache")
 ```
 
 If no arguments are specified, the entire cache will be cleared. Otherwise, only the ontology with the given acronym will be cleared.
-Finally, `cache_exists(ontology_acronym='')` is a simple function that returns `True` if the given acronym exists in the cache, and `False` otherwise.
+Finally, `cache_exists(ontology_acronym='', cache_folder=".cache")` is a simple function that returns `True` if the given acronym exists in the cache, and `False` otherwise.
 
 > [!NOTE]
 > The `cache_ontology` function returns an object that can be used to directly call the `map_terms` function, as well as `clear_cache` and `cache_exists`. These have the same arguments, except `ontology_target` is no longer specified and there is no `use_cache` option, since it is always True. 

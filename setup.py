@@ -1,5 +1,7 @@
 from setuptools import setup, find_packages
-from text2term.config import VERSION
+import re
+
+VERSION = '4.3.1'
 
 description = 'a tool for mapping free-text descriptions of entities to ontology terms'
 long_description = open('README.md').read()
