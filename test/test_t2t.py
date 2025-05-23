@@ -192,17 +192,15 @@ class Text2TermTestSuite(unittest.TestCase):
         preprocess_file = "simple_preprocess.txt"
         if not os.path.exists(preprocess_file):
             with open(preprocess_file, 'w') as f:
-                f.write("disease:asthma\n")
-                f.write("important:protein level\n")
+                f.write("disease;:;asthma\n")
+                f.write("important;:;protein level\n")
 
         tagged_terms = text2term.preprocess_tagged_terms(preprocess_file)
         df4 = text2term.map_terms(tagged_terms, target_ontology="EFO", use_cache=True, incl_unmapped=True, cache_folder=self.TEST_CACHE_FOLDER)
         print(f"{df4}\n")
         assert df4.size > 0
-        
-        # Check if source terms contain the tag names (they seem to based on the error)
-        assert "disease:asthma" in df4["Source Term"].values
-        assert "important:protein level" in df4["Source Term"].values
+        assert df4[self.TAGS_COLUMN].str.contains("disease").any()
+        assert df4[self.TAGS_COLUMN].str.contains("important").any()
         
 
     def test_mapping_to_properties(self):
