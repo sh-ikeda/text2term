@@ -354,7 +354,7 @@ def _save_mappings(
 
     if not excl_metadata:
         metadata_lines = [
-            f"# text2term v{version("text2term")}",
+            f"# text2term v{version('text2term')}",
             f"# Timestamp: {datetime.datetime.now()}",
             f"# Target Ontology: {target_ontology}",
             f"# Minimum Score: {min_score:.2f}",
