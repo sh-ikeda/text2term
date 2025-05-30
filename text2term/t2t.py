@@ -6,6 +6,7 @@ import datetime
 import time
 import pandas as pd
 from pathlib import Path
+from importlib.metadata import version
 from text2term import onto_utils
 from text2term import onto_cache
 from text2term.mapper import Mapper
@@ -17,7 +18,6 @@ from text2term.bioportal_mapper import BioPortalAnnotatorMapper
 from text2term.syntactic_mapper import SyntacticMapper
 from text2term.tfidf_mapper import TFIDFMapper
 from text2term.zooma_mapper import ZoomaMapper
-from text2term.config import VERSION
 from text2term.tagged_term import TaggedTerm
 from text2term.term_mapping import TermMapping
 
@@ -354,13 +354,13 @@ def _save_mappings(
 
     if not excl_metadata:
         metadata_lines = [
+            f"# text2term v{version("text2term")}",
             f"# Timestamp: {datetime.datetime.now()}",
             f"# Target Ontology: {target_ontology}",
-            f"# text2term version: {VERSION}",
             f"# Minimum Score: {min_score:.2f}",
+            f"# Maximum Mappings: {max_mappings}",
             f"# Mapper: {mapper.value}",
             f"# Base IRIs: {base_iris}",
-            f"# Max Mappings: {max_mappings}",
             f"# Term Type: {term_type}",
             "# Deprecated Terms " + ("Excluded" if excl_deprecated else "Included"),
             "# Unmapped Terms " + ("Included" if incl_unmapped else "Excluded"),
@@ -369,8 +369,7 @@ def _save_mappings(
         unique_source_ids = pd.unique(mappings["Source Term ID"])
         unique_mapped_iris = pd.unique(mappings["Mapped Term IRI"])
         mapping_count_line = (
-            f"# Of {len(source_terms)} input terms, "
-            f"{len(unique_source_ids)} were mapped to "
+            f"# {len(unique_source_ids)} out of {len(source_terms)} input terms were mapped to "
             f"{len(unique_mapped_iris)} unique ontology terms"
         )
         metadata_lines.append(mapping_count_line)
