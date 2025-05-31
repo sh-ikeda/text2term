@@ -1,11 +1,13 @@
 import os
+import uuid
+import tempfile
 import unittest
 import pandas as pd
 import text2term
-from text2term import OntologyTermType
+import text2term.onto_cache as onto_cache
+from text2term import OntologyTermType, onto_utils
 from text2term import Mapper
 from text2term import OntologyTermCollector
-import text2term.onto_cache as onto_cache
 
 pd.set_option('display.max_columns', None)
 
@@ -380,6 +382,95 @@ class Text2TermTestSuite(unittest.TestCase):
     def ensure_cache_exists(self, ontology_name, ontology_url):
         if not text2term.cache_exists(ontology_name, cache_folder=self.TEST_CACHE_FOLDER):
             text2term.cache_ontology(ontology_url=ontology_url, ontology_acronym=ontology_name, cache_folder=self.TEST_CACHE_FOLDER)
+
+
+class OntoUtilsTestSuite(unittest.TestCase):
+
+    def test_normalize_list(self):
+        self.assertEqual(onto_utils.normalize_list([" Apple ", "Banana"]), ["apple", "banana"])
+
+    def test_normalize(self):
+        self.assertEqual(onto_utils.normalize(" TeSt "), "test")
+
+    def test_remove_quotes(self):
+        self.assertEqual(onto_utils.remove_quotes('"quoted"'), "quoted")
+        self.assertEqual(onto_utils.remove_quotes("'quoted'"), "quoted")
+
+    def test_remove_whitespace(self):
+        self.assertEqual(onto_utils.remove_whitespace(" spaced string "), "spacedstring")
+
+    def test_curie_from_iri(self):
+        self.assertEqual(onto_utils.curie_from_iri("http://purl.obolibrary.org/obo/GO_0008150"), "GO:0008150")
+
+    def test_label_from_iri(self):
+        self.assertEqual(onto_utils.label_from_iri("http://example.org/ontology/Term_Label"), "Term_Label")
+
+    def test_iri_from_tag(self):
+        self.assertEqual(onto_utils.iri_from_tag("GO_0008150"), "http://purl.obolibrary.org/obo/GO_0008150")
+        self.assertEqual(onto_utils.iri_from_tag("GO:0008150"), "http://purl.obolibrary.org/obo/GO_0008150")
+
+    def test_get_logger(self):
+        logger = onto_utils.get_logger("test_logger")
+        self.assertTrue(hasattr(logger, "info"))
+
+    def test_parse_list_file(self):
+        with tempfile.NamedTemporaryFile(mode='w+', delete=False) as f:
+            f.write("apple\nbanana\n")
+            f_path = f.name
+        try:
+            self.assertEqual(onto_utils.parse_list_file(f_path), ["apple", "banana"])
+        finally:
+            os.remove(f_path)
+
+    def test_parse_csv_file(self):
+        with tempfile.NamedTemporaryFile(mode='w+', delete=False) as f:
+            f.write("disease,disease code,patient count\n"
+                    "asthma,abb1,30\n"
+                    "bronchitis,baa1,21")
+            f_path = f.name
+        try:
+            terms, term_ids = onto_utils.parse_csv_file(file_path=f_path,
+                                                        term_column_name="disease",
+                                                        term_id_column_name="disease code")
+            self.assertEqual(terms.tolist(), ["asthma", "bronchitis"])
+            self.assertEqual(term_ids.tolist(), ["abb1", "baa1"])
+        finally:
+            os.remove(f_path)
+
+    def test_parse_tsv_file(self):
+        with tempfile.NamedTemporaryFile(mode='w+', delete=False) as f:
+            f.write("disease\tdisease code\tpatient count\n"
+                    "asthma\tabb1\t30\n"
+                    "bronchitis\tbaa1\t21")
+            f_path = f.name
+        try:
+            terms, term_ids = onto_utils.parse_tsv_file(file_path=f_path,
+                                                        term_column_name= "disease",
+                                                        term_id_column_name= "disease code")
+            self.assertEqual(terms.tolist(), ["asthma", "bronchitis"])
+            self.assertEqual(term_ids.tolist(), ["abb1", "baa1"])
+        finally:
+            os.remove(f_path)
+
+    def test_get_ontology_from_labels(self):
+        ontology_iri = "https://test.ontology.org/"
+        terms = ["asthma", "bronchitis", "hypertension", "diabetes mellitus"]
+        result = onto_utils.get_ontology_from_labels(terms, ontology_iri=ontology_iri)
+        self.assertEqual(result.base_iri, ontology_iri)
+        self.assertEqual(len(list(result.classes())), len(terms))
+
+    def test_generate_uuid(self):
+        some_uuid = onto_utils.generate_uuid(length=23)
+        self.assertTrue(len(some_uuid) == 23)
+
+    def test_generate_iri(self):
+        iri = onto_utils.generate_iri()
+        self.assertTrue(iri.startswith(onto_utils.BASE_IRI + "R"))
+
+    def test_generate_iris(self):
+        iris = onto_utils.generate_iris(3)
+        self.assertEqual(len(iris), 3)
+        self.assertTrue(all(i.startswith(onto_utils.BASE_IRI + "R") for i in iris))
 
 
 if __name__ == '__main__':
