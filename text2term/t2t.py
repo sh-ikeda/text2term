@@ -123,7 +123,8 @@ def map_terms(source_terms, target_ontology, base_iris=(), csv_columns=(), excl_
 def cache_ontology(ontology_url, ontology_acronym="", base_iris=(), cache_folder=".cache"):
     if ontology_acronym == "":
         ontology_acronym = ontology_url
-    ontology_terms = _load_ontology(ontology_url, base_iris, exclude_deprecated=False, term_type=OntologyTermType.ANY, cache_folder=cache_folder)
+    ontology_terms = _load_ontology(ontology_url, base_iris, exclude_deprecated=False, term_type=OntologyTermType.ANY,
+                                    cache_folder=cache_folder)
     cache_dir = os.path.join(cache_folder, ontology_acronym)
     LOGGER.info(f"Caching ontology {ontology_url} to: {cache_dir}")
     if not os.path.exists(cache_dir):
@@ -184,7 +185,8 @@ def _load_data(input_file_path, csv_column_names, separator):
     return terms, term_ids
 
 
-def _load_ontology(ontology, iris, exclude_deprecated, use_cache=False, term_type=OntologyTermType.CLASS, cache_folder=".cache"):
+def _load_ontology(ontology, iris, exclude_deprecated, use_cache=False, term_type=OntologyTermType.CLASS,
+                   cache_folder=".cache"):
     if use_cache:
         pickle_file = os.path.join(cache_folder, ontology, ontology + "-term-details.pickle")
         LOGGER.info(f"Loading cached ontology from: {pickle_file}")

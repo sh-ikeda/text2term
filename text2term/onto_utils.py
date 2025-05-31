@@ -1,3 +1,4 @@
+import sys
 import logging
 import pandas as pd
 import bioregistry

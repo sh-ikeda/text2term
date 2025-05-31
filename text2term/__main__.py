@@ -1,6 +1,5 @@
 import argparse
 import os
-import sys
 from t2t import map_terms, cache_ontology
 from onto_cache import cache_exists
 from mapper import Mapper
@@ -50,7 +49,6 @@ if __name__ == "__main__":
     arguments = parser.parse_args()
     if not os.path.exists(arguments.source):
         parser.error("The file '{}' does not exist".format(arguments.source))
-        sys.exit(1)
     mapper = Mapper(arguments.mapper)
     iris = arguments.base_iris
     if len(iris) > 0:
