@@ -7,7 +7,7 @@ from owlready2 import *
 from gensim.parsing import strip_non_alphanum, strip_multiple_whitespaces
 
 
-BASE_IRI = "http://ccb.hms.harvard.edu/t2t/"
+BASE_IRI = "https://text2term.utils/"
 
 STOP_WORDS = {'in', 'the', 'any', 'all', 'for', 'and', 'or', 'dx', 'on', 'fh', 'tx', 'only', 'qnorm', 'w', 'iqb', 's',
               'ds', 'rd', 'rdgwas', 'ICD', 'excluded', 'excluding', 'unspecified', 'certain', 'also', 'undefined',
@@ -136,9 +136,10 @@ def parse_tsv_file(file_path, term_column_name, term_id_column_name):
     return parse_csv_file(file_path, term_column_name, term_id_column_name, separator="\t")
 
 
-def get_ontology_from_labels(term_labels):
-    onto_iri = BASE_IRI + "Ontology-" + generate_uuid()
-    onto = owlready2.get_ontology(onto_iri)
+def get_ontology_from_labels(term_labels, ontology_iri=None):
+    if ontology_iri is None:
+        ontology_iri = BASE_IRI + "Ontology-" + generate_uuid()
+    onto = owlready2.get_ontology(ontology_iri)
     onto.metadata.comment.append("Created dynamically using text2term")
     onto.metadata.comment.append(datetime.datetime.now())
     for term_label in term_labels:
@@ -149,16 +150,16 @@ def get_ontology_from_labels(term_labels):
     return onto
 
 
-def generate_uuid():
-    return str(shortuuid.ShortUUID().random(length=10))
+def generate_uuid(length=10):
+    return str(shortuuid.ShortUUID().random(length=length))
 
 
-def generate_iri():
-    return BASE_IRI + "R" + generate_uuid()
+def generate_iri(uuid_length=10):
+    return BASE_IRI + "R" + generate_uuid(length=uuid_length)
 
 
-def generate_iris(quantity):
-    return [generate_iri() for _ in range(quantity)]
+def generate_iris(quantity, uuid_length=10):
+    return [generate_iri(uuid_length=uuid_length) for _ in range(quantity)]
 
 
 OBO_BASE_IRI = "http://purl.obolibrary.org/obo/"
