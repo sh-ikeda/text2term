@@ -122,7 +122,6 @@ class Text2TermTestSuite(unittest.TestCase):
         
         if ontology_registry_filepath is None:
             self.skipTest("Ontology registry file not found in expected locations")
-            return
         
         nr_ontologies_in_registry = len(pd.read_csv(ontology_registry_filepath))
 
@@ -201,7 +200,34 @@ class Text2TermTestSuite(unittest.TestCase):
         assert df4.size > 0
         assert df4[self.TAGS_COLUMN].str.contains("disease").any()
         assert df4[self.TAGS_COLUMN].str.contains("important").any()
-        
+
+    def test_preprocessing_terms(self):
+        input_terms = ['Hypertension NOS', 'Diabetes mellitus due to underlying condition']
+        result = text2term.preprocess_terms(terms=input_terms, template_path='test_templates.txt')
+        expected = {
+            'Hypertension NOS': 'Hypertension',
+            'Diabetes mellitus due to underlying condition': 'Diabetes mellitus'
+        }
+        self.assertEqual(result, expected)
+
+    def test_preprocessing_terms_and_dedupe(self):
+        input_terms = ['Hypertension NOS', 'Diabetes mellitus due to underlying condition',
+                       'Hypertension due to unspecified condition', 'Hypertension']
+        result = text2term.preprocess_terms(terms=input_terms, template_path='test_templates.txt', rem_duplicates=True)
+        expected = {
+            'Hypertension': 'Hypertension',
+            'Diabetes mellitus due to underlying condition': 'Diabetes mellitus'
+        }
+        self.assertEqual(result, expected)
+
+    def test_preprocessing_blocklisted_terms(self):
+        terms = ['Hypertension', 'Patient ID', 'Admission Date']
+        blocklist_path = 'test_blocklist.txt'  # This file should contain 'Common Cold'
+        result = text2term.preprocess_terms(terms, template_path="", blocklist_path=blocklist_path)
+        expected = {
+            'Hypertension': 'Hypertension'
+        }
+        self.assertEqual(result, expected)
 
     def test_mapping_to_properties(self):
         # Test mapping a list of properties to EFO loaded from a URL and restrict search to properties
