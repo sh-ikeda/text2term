@@ -3,6 +3,7 @@
 from owlready2 import *
 from text2term import onto_utils
 from text2term.term import OntologyTerm, OntologyTermType
+import time
 import logging
 import bioregistry
 
@@ -376,18 +377,20 @@ class OntologyTermCollector:
         self.logger.debug(" Data property count: %i", len(list(ontology.data_properties())))
         self.logger.debug(" Annotation property count: %i", len(list(ontology.annotation_properties())))
 
+
 def filter_terms(onto_terms, iris=(), excl_deprecated=False, term_type=OntologyTermType.ANY):
     filtered_onto_terms = {}
     for base_iri, term in onto_terms.items():
-        if type(iris) == str:
+        if isinstance(iris, str):
             begins_with_iri = (iris == ()) or base_iri.startswith(iris)
         else:
             begins_with_iri = (iris == ()) or any(base_iri.startswith(iri) for iri in iris)
         is_not_deprecated = (not excl_deprecated) or (not term.deprecated)
-        include = _filter_term_type(term, term_type, True) 
+        include = _filter_term_type(term, term_type, True)
         if begins_with_iri and is_not_deprecated and include:
             filtered_onto_terms.update({base_iri: term})
     return filtered_onto_terms
+
 
 def _filter_term_type(ontology_term, term_type, cached):
     if term_type == OntologyTermType.CLASS:
@@ -401,6 +404,6 @@ def _filter_term_type(ontology_term, term_type, cached):
         else:
             return isinstance(ontology_term, PropertyClass)
     elif term_type == OntologyTermType.ANY:
-        return True 
+        return True
     else:
         raise ValueError("Invalid term-type option. Acceptable term types are: 'class' or 'property' or 'any'")

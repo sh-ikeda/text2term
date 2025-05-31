@@ -6,6 +6,7 @@ import datetime
 import time
 import pandas as pd
 from pathlib import Path
+from importlib.metadata import version
 from text2term import onto_utils
 from text2term import onto_cache
 from text2term.mapper import Mapper
@@ -17,7 +18,6 @@ from text2term.bioportal_mapper import BioPortalAnnotatorMapper
 from text2term.syntactic_mapper import SyntacticMapper
 from text2term.tfidf_mapper import TFIDFMapper
 from text2term.zooma_mapper import ZoomaMapper
-from text2term.config import VERSION
 from text2term.tagged_term import TaggedTerm
 from text2term.term_mapping import TermMapping
 
@@ -32,7 +32,7 @@ LOGGER = onto_utils.get_logger(__name__, level=logging.INFO)
 def map_terms(source_terms, target_ontology, base_iris=(), csv_columns=(), excl_deprecated=False, max_mappings=3,
               min_score=0.3, mapper=Mapper.TFIDF, output_file='', save_graphs=False, save_mappings=False,
               source_terms_ids=(), separator=',', use_cache=False, term_type=OntologyTermType.CLASS,
-              incl_unmapped=False, excl_metadata=False, bioportal_apikey=""):
+              incl_unmapped=False, excl_metadata=False, bioportal_apikey="", cache_folder=".cache"):
     """
     Maps the terms in the given list to the specified target ontology.
 
@@ -80,6 +80,8 @@ def map_terms(source_terms, target_ontology, base_iris=(), csv_columns=(), excl_
         Exclude metadata in output file
     bioportal_apikey : str
         BioPortal API Key to use along with the BioPortal mapper option
+    cache_folder : str
+        Path to the folder where ontologies are cached (defaults to ".cache")
 
     Returns
     ----------
@@ -102,7 +104,7 @@ def map_terms(source_terms, target_ontology, base_iris=(), csv_columns=(), excl_
     if mapper in {Mapper.ZOOMA, Mapper.BIOPORTAL}:
         target_terms = '' if target_ontology.lower() == 'all' else target_ontology
     else:
-        target_terms = _load_ontology(target_ontology, base_iris, excl_deprecated, use_cache, term_type)
+        target_terms = _load_ontology(target_ontology, base_iris, excl_deprecated, use_cache, term_type, cache_folder)
     # Run the mapper
     LOGGER.info(f"Mapping {len(source_terms)} source terms to {target_ontology}")
     mappings_df = _do_mapping(source_terms, source_terms_ids, target_terms, mapper, max_mappings, min_score, tags,
@@ -118,18 +120,19 @@ def map_terms(source_terms, target_ontology, base_iris=(), csv_columns=(), excl_
 
 
 # Caches a single ontology
-def cache_ontology(ontology_url, ontology_acronym="", base_iris=()):
+def cache_ontology(ontology_url, ontology_acronym="", base_iris=(), cache_folder=".cache"):
     if ontology_acronym == "":
         ontology_acronym = ontology_url
-    ontology_terms = _load_ontology(ontology_url, base_iris, exclude_deprecated=False, term_type=OntologyTermType.ANY)
-    cache_dir = os.path.join("cache", ontology_acronym)
+    ontology_terms = _load_ontology(ontology_url, base_iris, exclude_deprecated=False, term_type=OntologyTermType.ANY,
+                                    cache_folder=cache_folder)
+    cache_dir = os.path.join(cache_folder, ontology_acronym)
     LOGGER.info(f"Caching ontology {ontology_url} to: {cache_dir}")
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir)
     _serialize_ontology(ontology_terms, ontology_acronym, cache_dir)
     _save_graphs(ontology_terms, output_file=os.path.join(cache_dir, ontology_acronym))
     ontology_terms.clear()
-    return onto_cache.OntologyCache(ontology_acronym)
+    return onto_cache.OntologyCache(ontology_acronym, cache_folder=cache_folder)
 
 
 """
@@ -182,9 +185,10 @@ def _load_data(input_file_path, csv_column_names, separator):
     return terms, term_ids
 
 
-def _load_ontology(ontology, iris, exclude_deprecated, use_cache=False, term_type=OntologyTermType.CLASS):
+def _load_ontology(ontology, iris, exclude_deprecated, use_cache=False, term_type=OntologyTermType.CLASS,
+                   cache_folder=".cache"):
     if use_cache:
-        pickle_file = os.path.join("cache", ontology, ontology + "-term-details.pickle")
+        pickle_file = os.path.join(cache_folder, ontology, ontology + "-term-details.pickle")
         LOGGER.info(f"Loading cached ontology from: {pickle_file}")
         with open(pickle_file, "rb") as cached_ontology_pickle:
             onto_terms_unfiltered = pickle.load(cached_ontology_pickle)
@@ -352,13 +356,13 @@ def _save_mappings(
 
     if not excl_metadata:
         metadata_lines = [
+            f"# text2term v{version('text2term')}",
             f"# Timestamp: {datetime.datetime.now()}",
             f"# Target Ontology: {target_ontology}",
-            f"# text2term version: {VERSION}",
             f"# Minimum Score: {min_score:.2f}",
+            f"# Maximum Mappings: {max_mappings}",
             f"# Mapper: {mapper.value}",
             f"# Base IRIs: {base_iris}",
-            f"# Max Mappings: {max_mappings}",
             f"# Term Type: {term_type}",
             "# Deprecated Terms " + ("Excluded" if excl_deprecated else "Included"),
             "# Unmapped Terms " + ("Included" if incl_unmapped else "Excluded"),
@@ -367,8 +371,7 @@ def _save_mappings(
         unique_source_ids = pd.unique(mappings["Source Term ID"])
         unique_mapped_iris = pd.unique(mappings["Mapped Term IRI"])
         mapping_count_line = (
-            f"# Of {len(source_terms)} input terms, "
-            f"{len(unique_source_ids)} were mapped to "
+            f"# {len(unique_source_ids)} out of {len(source_terms)} input terms were mapped to "
             f"{len(unique_mapped_iris)} unique ontology terms"
         )
         metadata_lines.append(mapping_count_line)

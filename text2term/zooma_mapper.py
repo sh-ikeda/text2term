@@ -80,6 +80,8 @@ class ZoomaMapper:
                 return json_resp
             else:
                 self.logger.info("Empty response for input: " + request_url + " with parameters " + str(params))
+                return None
         else:
             json_resp = json.loads(response.content)
             self.logger.error(response.reason + ":" + request_url + ". " + json_resp["errors"][0])
+            return None

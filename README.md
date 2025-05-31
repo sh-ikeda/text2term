@@ -15,12 +15,12 @@
       <img alt="Test coverage" src="https://codecov.io/gh/rsgoncalves/text2term/graph/badge.svg?token=7O155IVIYC"/> 
    </a>
    <a href="https://doi.org/10.1093/database/baae119" target="_blank">
-      <img alt="Citation" src="https://img.shields.io/badge/DOI-10.1093/database/baae119-orange" />
+      <img alt="Citation" src="https://img.shields.io/badge/DOI-10.1093/database/baae119-white" />
    </a>
    <a href="https://shields.io/badges/py-pi-downloads" target="_blank">
       <img alt="PyPI Installs" src="https://img.shields.io/pypi/dm/text2term?label=pypi%20installs&color=D3CB40">
    </a>
-   <a href="https://shields.io/badges/pepy-total-downlods" target="_blank">
+   <a href="https://shields.io/badges/pepy-total-downloads" target="_blank">
       <img alt="Total Downloads" src="https://img.shields.io/pepy/dt/text2term?label=downloads&color=D10000">
    </a>
    <a href="https://github.com/rsgoncalves/text2term/blob/main/LICENSE" target="_blank">
@@ -31,77 +31,87 @@
    </a>
 </div>
 
-## Installation
-Install package using **pip**:
+## 🛠️ Installation
+Install the package from [PyPI](https://pypi.org/project/text2term/) using the **pip** package installer:
 
-```
+```shell
 pip install text2term
 ```
-## Basic Examples
 
-### Examples of Programmatic Mapping
+## 💡 Usage Examples
+
+### 🎯 Examples of Programmatic Mapping
 text2term supports mapping strings specified in multiple input formats. In the first example, we map strings in a list to an ontology specified by its URL:
 
 ```python
 import text2term 
-dfl = text2term.map_terms(source_terms=["asthma", "acute bronchitis"], 
-                          target_ontology="http://purl.obolibrary.org/obo/mondo.owl")
+df = text2term.map_terms(source_terms=["asthma", "acute bronchitis"], 
+                         target_ontology="http://purl.obolibrary.org/obo/mondo.owl")
 ```
 
 There is also support for file-based input, for example a file containing a list of strings:
 ```python
-dff = text2term.map_terms(source_terms="test/unstruct_terms.txt", 
-                          target_ontology="http://purl.obolibrary.org/obo/mondo.owl")
+df = text2term.map_terms(source_terms="test/unstruct_terms.txt", 
+                         target_ontology="http://purl.obolibrary.org/obo/mondo.owl")
 ```
 
 or a table where we can specify the column of terms to map and the table value separator:
 ```python
-dff = text2term.map_terms(source_terms="test/some_table.tsv", 
-                          csv_columns=('diseases','optional_ids'), separator="\t",
-                          target_ontology="http://purl.obolibrary.org/obo/mondo.owl")
+df = text2term.map_terms(source_terms="test/some_table.tsv", 
+                         csv_columns=('diseases','optional_ids'), separator="\t",
+                         target_ontology="http://purl.obolibrary.org/obo/mondo.owl")
 ```
 
 Finally it is possible map strings in a dictionary with associated tags that are preserved in the output:
 ```python
-dfd = text2term.map_terms(source_terms={"asthma":"disease", "acute bronchitis":["disease", "lung"]}, 
-                          target_ontology="http://purl.obolibrary.org/obo/mondo.owl")
+df = text2term.map_terms(source_terms={"asthma":"disease", 
+                                       "acute bronchitis":["disease", "lung"]}, 
+                         target_ontology="http://purl.obolibrary.org/obo/mondo.owl")
 ```
 
 
-### Examples of Programmatic Caching
+### 💾 Examples of Programmatic Caching
 text2term supports caching an ontology for repeated use. Here we cache an ontology and give it a name:
 ```python
 mondo = text2term.cache_ontology(ontology_url="http://purl.obolibrary.org/obo/mondo.owl", 
-                                 ontology_acronym="MONDO")
+                                 ontology_acronym="MONDO",
+                                 cache_folder=".cache")  # Optional: specify custom cache location
 ```
 
-The given name acts as a reference. Now we can map strings to the cached ontology by specifying as `target_ontology` the name specified above and the flag `use_cache=True`
+The name given in `ontology_acronym` acts as a reference. Now we can map strings to the cached ontology by specifying as `target_ontology` the name specified above ("MONDO") and the flag `use_cache=True`
 
 ```python
-dfc = text2term.map_terms(source_terms=["asthma", "acute bronchitis"], 
-                          target_ontology="MONDO", use_cache=True)
+df = text2term.map_terms(source_terms=["asthma", "acute bronchitis"], 
+                         target_ontology="MONDO", 
+                         use_cache=True,
+                         cache_folder=".cache")  # Optional: specify custom cache location
 ```
 
 More succinctly, we can use the returned `OntologyCache` object `mondo` as such:
 ```python
-dfo = mondo.map_terms(source_terms=["asthma", "acute bronchitis"])
+df = mondo.map_terms(source_terms=["asthma", "acute bronchitis"])
 ```
 
 
-### Examples of Command Line Interface Use
-To use text2term from the command-line, the current working folder (in the command line) must be the folder containing the text2term package. This can be achieved as follows:
+### 🖥️ Examples of Command Line Usage
+To use text2term from the command line, the current working directory must be the one containing the text2term package. This can be achieved as follows:
 
-Identify where pip installed text2term using:
-```pip show texterm```
+Identify where pip installed the text2term package by running:
 
-Change to the directory specified in the “Location” field, e.g.:
+```shell
+pip show text2term
+```
 
-```cd /opt/homebrew/lib/python3.9/site-packages```
+The output should contain a field called `Location` with a system path. Copy the path and then navigate to it, e.g.:
+
+```shell
+cd /opt/homebrew/lib/python3.9/site-packages
+```
 
 > [!NOTE]
 > When cloned from GitHub and then installed using `pip install path/to/text2term`—where `path/to/text2term` is the cloned folder containing `setup.py`—text2term can be called from that folder
 
-Then you can run text2term commands from the terminal. For example, to show a help message describing all arguments type into a terminal:
+Then you can run text2term commands from the terminal. For example, to show a help message describing all arguments, type into a terminal:
 ```shell
 python text2term --help
 ```
@@ -149,8 +159,8 @@ python text2term -s test/unstruct_terms.txt -t MONDO
 ```
 
 
-## Programmatic Usage
-After installing and importing to a Python environment, the main function is `map_terms()`:
+## 📦 Programmatic Usage
+After installing and importing to a Python environment, the tool's main function is `map_terms()`:
 
 ```python
 text2term.map_terms(source_terms,               # strings to map or pointer to file 
@@ -171,9 +181,9 @@ text2term.map_terms(source_terms,               # strings to map or pointer to f
                     bioportal_apikey='',        # API key to use the BioPortal mapper
                     excl_metadata=False)        # exclude metadata from the output file
 ```
-The function returns a pandas `DataFrame` containing the generated ontology mappings.
+This function returns a pandas `DataFrame` containing the generated ontology mappings.
 
-### Argument Details
+### ⚙️ Argument Details
 
 `source_terms`&mdash;Strings to be mapped to an ontology, which can be specified as a:
 1. list of strings
@@ -184,7 +194,7 @@ The function returns a pandas `DataFrame` containing the generated ontology mapp
    - If a term is tagged with "Ignore", text2term will not map it
    - Unmapped terms can still be included in the output if `incl_unmapped` is True
 
-`target_ontology`&mdash;Path, URL or name of 'target' ontology to map the source terms to. Ontology names can be given as values to `target_ontology` e.g. "EFO" or "CL"&mdash;text2term uses [bioregistry](https://bioregistry.io) to get URLs for such names. Similarly, when the target ontology has been cached, enter the name used upon caching.
+`target_ontology`&mdash;Path, URL or name of 'target' ontology to map the source terms to. Ontology names can be given as values to `target_ontology` e.g. "EFO" or "CL"&mdash;text2term uses [Bioregistry](https://bioregistry.io) to get URLs for such names. Similarly, when the target ontology has been cached, enter the name used upon caching.
 
 When using the BioPortal or Zooma interfaces, the value for `target_ontology` should be a comma-separated list of ontology acronyms (eg 'EFO,HPO') or **'all'** to search all ontologies.
 
@@ -221,29 +231,29 @@ When using the BioPortal or Zooma interfaces, the value for `target_ontology` sh
 `excl_metadata`&mdash;Exclude the metadata header from the output file
 
 
-### Ontology Caching
+### 💾 Ontology Caching
 text2term supports caching ontologies for faster or repeated mapping to the same ontology. An ontology can be cached using the function:
 
 ```python
-text2term.cache_ontology(ontology_url, ontology_acronym="", base_iris=())
+text2term.cache_ontology(ontology_url, ontology_acronym="", base_iris=(), cache_folder=".cache")
 ```
-This caches a single ontology from a URL or file path, and takes an optional acronym that will be used to reference the cached ontology later. If no acronym is given, the URL is used as the name.
+This caches a single ontology from a URL or file path, and takes an optional acronym that will be used to reference the cached ontology later. If no acronym is given, the URL is used as the name. The `cache_folder` parameter allows specifying a custom location for the cache (defaults to ".cache").
 
 It is also possible to cache multiple ontologies, whose names and URLs are specified in a table formatted as such `acronym,version,url`. An example is provided in [resources/ontologies.csv](https://github.com/rsgoncalves/text2term/blob/main/text2term/resources/ontologies.csv):
 ```python
-text2term.cache_ontology_set(ontology_registry_path)
+text2term.cache_ontology_set(ontology_registry_path, cache_folder=".cache")
 ```
 
-Once an ontology has been cached by either function, it is stored in a cache folder locally, and thus can be referenced even in different Python instances. Users can leverage the cache by using the assigned acronym as the value for the `target_ontology` argument, and setting the `use_cache` argument to `True`.
+Once an ontology has been cached by either function, it is stored in a cache folder locally, and thus can be referenced even in different Python instances. Users can leverage the cache by using the assigned acronym as the value for the `target_ontology` argument, and setting the `use_cache` argument to `True`. The `cache_folder` parameter can be used to specify a custom cache location.
 
 To clear the ontology cache, the following function can be used:
 
 ```python
-text2term.clear_cache(ontology_acronym='')
+text2term.clear_cache(ontology_acronym='', cache_folder=".cache")
 ```
 
 If no arguments are specified, the entire cache will be cleared. Otherwise, only the ontology with the given acronym will be cleared.
-Finally, `cache_exists(ontology_acronym='')` is a simple function that returns `True` if the given acronym exists in the cache, and `False` otherwise.
+Finally, `cache_exists(ontology_acronym='', cache_folder=".cache")` is a simple function that returns `True` if the given acronym exists in the cache, and `False` otherwise.
 
 > [!NOTE]
 > The `cache_ontology` function returns an object that can be used to directly call the `map_terms` function, as well as `clear_cache` and `cache_exists`. These have the same arguments, except `ontology_target` is no longer specified and there is no `use_cache` option, since it is always True. 
@@ -252,18 +262,18 @@ Finally, `cache_exists(ontology_acronym='')` is a simple function that returns `
 > While ontology URLs can be repeatedly used, acronyms must be distinct in a given environment.
 
 
-### Input Preprocessing
+### 🧹 Input Preprocessing
 text2term includes a module `preprocess.py` that supports regular expression-based preprocessing functionality for input terms. There are functions that take the input terms and a collection of (user-defined) regular expressions, then match each term to each regular expression to simplify the input term.
 
 ```python
-preprocess.preprocess_terms(terms, template_path, output_file='', blocklist_path='', 
-                            blocklist_char='', rem_duplicates=False)
+text2term.preprocess_terms(terms, template_path, output_file='', blocklist_path='', 
+                           blocklist_char='', rem_duplicates=False)
 ``` 
 This returns a dictionary where the keys are the original terms and the values are the preprocessed terms.
 
 ```python
-preprocess.preprocess_tagged_terms(file_path, template_path='', blocklist_path='', 
-                                   blocklist_char='', rem_duplicates=False, separator=';:;')
+text2term.preprocess_tagged_terms(file_path, template_path='', blocklist_path='', 
+                                  blocklist_char='', rem_duplicates=False, separator=';:;')
 ```
 
 This returns a list of `TaggedTerm` objects.
@@ -279,7 +289,7 @@ When the input to text2term is a table, any rows that contain `NA` values in the
 If an ignore tag `"ignore"` or `"Ignore"` is added to a term, that term will not be mapped to any terms in the ontology. It will only be included in the output if the `incl_unmapped` argument is True. The following values are regarded as ignore tags: `"ignore", "Ignore".
 
 
-## Command Line Interface Usage
+## 🖥️ Command Line Usage
 
 After installing, execute the tool from a command line as follows:
 
@@ -289,13 +299,13 @@ To display a help message with descriptions of tool arguments do:
 
 `python text2term -h` or `python text2term --help`
 
-### Required Arguments
+### ❗ Required Arguments
 `-s SOURCE` Input file containing 'source' terms to map to ontology terms (list of terms or CSV file)
 
 `-t TARGET` Path or URL of 'target' ontology to map source terms to. When the chosen mapper is BioPortal or Zooma, provide a comma-separated list of acronyms (eg 'EFO,HPO') or write `'all'` to search all ontologies
 
 
-### Optional Arguments
+### ❕ Optional Arguments
 
 `-o OUTPUT` Path to desired output file for the mappings
 
@@ -325,7 +335,7 @@ To display a help message with descriptions of tool arguments do:
 
 `-md` Exclude the metadata header in the output file
 
-## Supported Mappers 
+## 🔧️ Supported Mappers 
 
 The mapping score of each mapping indicates how similar an input term is to an ontology term (via its labels or synonyms). The mapping scores generated by text2term are the result of applying one of the following _mappers_:
 
@@ -345,3 +355,25 @@ The mapping score of each mapping indicates how similar an input term is to an o
 
 > [!NOTE]
 > Syntactic distance-based mappers and Web API-based mappers perform slowly (much slower than the TF-IDF mapper). The former because they do pairwise comparisons between each input string and each ontology term label/synonym. In the Web API-based approaches there are networking and API load overheads
+
+## 📖 Citation
+
+If you use text2term in your research, please cite:
+> [The text2term tool to map free-text descriptions of biomedical terms to ontologies](https://doi.org/10.1093/database/baae119)<br/>
+> Rafael S Gonçalves, Jason Payne, Amelia Tan, Carmen Benitez, Jamie Haddock, Robert Gentleman<br/>
+> _Database_, Volume 2024, 2024, baae119, https://doi.org/10.1093/database/baae119
+
+```latex
+@article{10.1093/database/baae119,
+    author = {Gonçalves, Rafael S and Payne, Jason and Tan, Amelia and Benitez, Carmen and Haddock, Jamie and Gentleman, Robert},
+    title = {The text2term tool to map free-text descriptions of biomedical terms to ontologies},
+    journal = {Database},
+    volume = {2024},
+    pages = {baae119},
+    year = {2024},
+    month = {11},
+    issn = {1758-0463},
+    doi = {10.1093/database/baae119},
+    url = {https://doi.org/10.1093/database/baae119}
+}
+```

@@ -80,6 +80,7 @@ class BioPortalAnnotatorMapper:
                 return json_resp
             else:
                 self.logger.info("Empty response for input: " + request_url + " with parameters " + str(params))
+                return None
         elif response.status_code == 429:  # API is throttling requests
             self.logger.info(response.reason + ". Status code: " + str(response.status_code) + ". Waiting 15 seconds.")
             time.sleep(15)
@@ -87,3 +88,4 @@ class BioPortalAnnotatorMapper:
         else:
             json_resp = json.loads(response.content)
             self.logger.error(response.reason + ":" + request_url + ". " + json_resp["errors"][0])
+            return None
