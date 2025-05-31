@@ -8,6 +8,8 @@ import text2term.onto_cache as onto_cache
 from text2term import OntologyTermType, onto_utils
 from text2term import Mapper
 from text2term import OntologyTermCollector
+from text2term.bioportal_mapper import BioPortalAnnotatorMapper
+from text2term.zooma_mapper import ZoomaMapper
 
 pd.set_option('display.max_columns', None)
 
@@ -84,8 +86,8 @@ class Text2TermTestSuite(unittest.TestCase):
         preprocess_file = "simple_preprocess.txt"
         if not os.path.exists(preprocess_file):
             with open(preprocess_file, 'w') as f:
-                f.write("disease:asthma\n")
-                f.write("important:protein level\n")
+                f.write("asthma;:;disease\n")
+                f.write("protein level;:;important\n")
             print(f"Created sample preprocessing file: {preprocess_file}")
         
         print("Test environment setup complete")
@@ -178,7 +180,8 @@ class Text2TermTestSuite(unittest.TestCase):
         print("Test mapping a dictionary of tagged terms to cached EFO, and include unmapped terms in the output...")
         df3 = text2term.map_terms(
             {"asthma": "disease", "allergy": ["ignore", "response"], "protein level": ["measurement"],
-             "isdjfnsdfwd": None}, target_ontology="EFO", excl_deprecated=True, use_cache=True, incl_unmapped=True, cache_folder=self.TEST_CACHE_FOLDER)
+             "isdjfnsdfwd": None}, target_ontology="EFO", excl_deprecated=True, use_cache=True, incl_unmapped=True,
+            cache_folder=self.TEST_CACHE_FOLDER)
         print(f"{df3}\n")
         assert df3.size > 0
         assert df3[self.TAGS_COLUMN].str.contains("disease").any()
@@ -193,15 +196,38 @@ class Text2TermTestSuite(unittest.TestCase):
         preprocess_file = "simple_preprocess.txt"
         if not os.path.exists(preprocess_file):
             with open(preprocess_file, 'w') as f:
-                f.write("disease;:;asthma\n")
-                f.write("important;:;protein level\n")
+                f.write("asthma;:;disease\n")
+                f.write("protein level;:;important\n")
 
         tagged_terms = text2term.preprocess_tagged_terms(preprocess_file)
-        df4 = text2term.map_terms(tagged_terms, target_ontology="EFO", use_cache=True, incl_unmapped=True, cache_folder=self.TEST_CACHE_FOLDER)
+        df4 = text2term.map_terms(tagged_terms, target_ontology="EFO", use_cache=True, incl_unmapped=True,
+                                  cache_folder=self.TEST_CACHE_FOLDER)
         print(f"{df4}\n")
         assert df4.size > 0
         assert df4[self.TAGS_COLUMN].str.contains("disease").any()
         assert df4[self.TAGS_COLUMN].str.contains("important").any()
+
+    def test_preprocessing_tagged_terms(self):
+        self.ensure_cache_exists("EFO", self.EFO_URL)
+        # Test processing tagged terms where the tags are provided in a file
+        print("Test processing tagged terms where the tags are provided in a file...")
+
+        # Ensure the file exists before trying to use it
+        preprocess_file = "simple_preprocess.txt"
+        if not os.path.exists(preprocess_file):
+            with open(preprocess_file, 'w') as f:
+                f.write("asthma;:;disease\n")
+                f.write("protein level;:;important\n")
+
+        tagged_terms = text2term.preprocess_tagged_terms(preprocess_file, template_path="test_templates.txt")
+        df = text2term.map_terms(tagged_terms, target_ontology="EFO", use_cache=True, incl_unmapped=True,
+                                 cache_folder=self.TEST_CACHE_FOLDER)
+        print(f"{df}\n")
+        assert df.size > 0
+        assert df[self.TAGS_COLUMN].str.contains("disease").any()
+        assert df[self.TAGS_COLUMN].str.contains("important").any()
+        assert df["Source Term"].str.contains("hypertension").any()
+        assert not df["Source Term"].str.contains("hypertension NOS").all()
 
     def test_preprocessing_terms(self):
         input_terms = ['Hypertension NOS', 'Diabetes mellitus due to underlying condition']
@@ -262,6 +288,19 @@ class Text2TermTestSuite(unittest.TestCase):
         assert df_zooma[self.MAPPED_TERM_CURIE_COLUMN].str.contains("EFO:").any()
         assert df_zooma[self.MAPPED_TERM_CURIE_COLUMN].str.contains("NCIT:").any()
 
+    def test_mapping_zooma_empty_response(self):
+        print("Test mapping a term that obviously has no ontology term to be mapped to...")
+        df_zooma = text2term.map_terms(["ziggy"], target_ontology="NCIT",
+                                       mapper=Mapper.ZOOMA, term_type=OntologyTermType.ANY)
+        print(f"{df_zooma}\n")
+        assert df_zooma.empty is True
+
+    def test_mapping_zooma_bad_url(self):
+        print("Test mapping terms to a wrong URL for Zooma mapper...")
+        bp_mapper = ZoomaMapper()
+        with self.assertRaises(Exception):
+            bp_mapper._do_get_request(request_url="http://www.ebi.ac.uk/spot/zooma/v2/api/services/annotateBad")
+
     def test_mapping_bioportal_ontologies_no_apikey(self):
         # Test mapping a list of terms to multiple ontologies using the BioPortal Annotator mapper without API Key
         print("Test mapping a list of terms to multiple ontologies using the BioPortal Annotator mapper...")
@@ -279,6 +318,20 @@ class Text2TermTestSuite(unittest.TestCase):
         assert df_bioportal.size > 0
         assert df_bioportal[self.MAPPED_TERM_CURIE_COLUMN].str.contains("EFO:").any()
         assert df_bioportal[self.MAPPED_TERM_CURIE_COLUMN].str.contains("NCIT:").any()
+
+    def test_mapping_bioportal_empty_response(self):
+        print("Test mapping a term that obviously has no ontology term to be mapped to...")
+        df_bioportal = text2term.map_terms(["ziggy"], target_ontology="NCIT",
+                                           mapper=Mapper.BIOPORTAL, term_type=OntologyTermType.ANY,
+                                           bioportal_apikey="8f0cbe43-2906-431a-9572-8600d3f4266e")
+        print(f"{df_bioportal}\n")
+        assert df_bioportal.empty is True
+
+    def test_mapping_bioportal_bad_url(self):
+        print("Test mapping terms to a wrong URL for BioPortal Annotator mapper...")
+        bp_mapper = BioPortalAnnotatorMapper(bp_api_key="8f0cbe43-2906-431a-9572-8600d3f4266e")
+        with self.assertRaises(Exception):
+            bp_mapper._do_get_request(request_url="http://data.bioontology.org/annotatorBad")
 
     def test_term_collector(self):
         expected_nr_efo_terms = 50867

@@ -1,3 +1,4 @@
 asthma;:;disease
 acute bronchitis;:;important,tags
+hypertension NOS;:;disease
 colon disease
