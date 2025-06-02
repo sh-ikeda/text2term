@@ -75,7 +75,7 @@ text2term supports caching an ontology for repeated use. Here we cache an ontolo
 ```python
 mondo = text2term.cache_ontology(ontology_url="http://purl.obolibrary.org/obo/mondo.owl", 
                                  ontology_acronym="MONDO",
-                                 cache_folder=".cache")  # Optional: specify custom cache location
+                                 cache_folder=".cache")  # specify custom cache location
 ```
 
 The name given in `ontology_acronym` acts as a reference. Now we can map strings to the cached ontology by specifying as `target_ontology` the name specified above ("MONDO") and the flag `use_cache=True`
@@ -84,7 +84,7 @@ The name given in `ontology_acronym` acts as a reference. Now we can map strings
 df = text2term.map_terms(source_terms=["asthma", "acute bronchitis"], 
                          target_ontology="MONDO", 
                          use_cache=True,
-                         cache_folder=".cache")  # Optional: specify custom cache location
+                         cache_folder=".cache")  # specify custom cache location
 ```
 
 More succinctly, we can use the returned `OntologyCache` object `mondo` as such:
@@ -235,7 +235,10 @@ When using the BioPortal or Zooma interfaces, the value for `target_ontology` sh
 text2term supports caching ontologies for faster or repeated mapping to the same ontology. An ontology can be cached using the function:
 
 ```python
-text2term.cache_ontology(ontology_url, ontology_acronym="", base_iris=(), cache_folder=".cache")
+text2term.cache_ontology(ontology_url="https://purl.obolibrary.org/obo/mondo.owl", 
+                         ontology_acronym="MONDO", 
+                         base_iris=(), 
+                         cache_folder=".cache")
 ```
 This caches a single ontology from a URL or file path, and takes an optional acronym that will be used to reference the cached ontology later. If no acronym is given, the URL is used as the name. The `cache_folder` parameter allows specifying a custom location for the cache (defaults to ".cache").
 
@@ -272,8 +275,9 @@ text2term.preprocess_terms(terms, template_path, output_file='', blocklist_path=
 This returns a dictionary where the keys are the original terms and the values are the preprocessed terms.
 
 ```python
-text2term.preprocess_tagged_terms(file_path, template_path='', blocklist_path='', 
-                                  blocklist_char='', rem_duplicates=False, separator=';:;')
+text2term.preprocess_tagged_terms(file_path, template_path='', 
+                                  blocklist_path='', blocklist_char='', 
+                                  rem_duplicates=False, separator=';:;')
 ```
 
 This returns a list of `TaggedTerm` objects.
