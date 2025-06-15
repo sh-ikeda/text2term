@@ -21,12 +21,15 @@ class OntologyTermCollector:
         if use_reasoning:
             self._classify_ontology(self.ontology)
 
-    def get_ontology_terms(self, base_iris=(), exclude_deprecated=False, term_type=OntologyTermType.ANY):
+    def get_ontology_terms(self, base_iris=(), exclude_deprecated=False, term_type=OntologyTermType.ANY,
+                           include_related_synonyms=False, include_broad_synonyms=False):
         """
         Collect the terms described in the ontology at the specified IRI
         :param base_iris: Limit ontology term collection to terms whose IRIs start with any IRI given in this tuple
         :param exclude_deprecated: Exclude ontology terms stated as deprecated using owl:deprecated 'true'
         :param term_type: Type of term--can be 'class' or 'property' or 'any' (individuals may be added in the future)
+        :param include_related_synonyms: Include related synonyms of each term, specified via oboInOwl#hasRelatedSynonym
+        :param include_broad_synonyms: Include broad synonyms of each term, specified via oboInOwl#hasBroadSynonym
         :return: Dictionary of ontology term IRIs and their respective details in the specified ontology
         """
         self.logger.info("Collecting ontology term details...")
@@ -38,18 +41,20 @@ class OntologyTermCollector:
                 query = iri + "*"
                 self.logger.info("...collecting terms with IRIs starting in: " + iri)
                 iris = list(default_world.search(iri=query))
-                ontology_terms = ontology_terms | self._get_ontology_terms(iris, self.ontology, exclude_deprecated,
-                                                                           term_type)
+                ontology_terms = (ontology_terms |
+                                  self._get_ontology_terms(iris, self.ontology, exclude_deprecated, term_type,
+                                                           include_related_synonyms=include_related_synonyms,
+                                                           include_broad_synonyms=include_broad_synonyms))
         else:
             ontology_signature = self._get_ontology_signature(self.ontology)
-            ontology_terms = self._get_ontology_terms(ontology_signature, self.ontology, exclude_deprecated, term_type)
+            ontology_terms = self._get_ontology_terms(term_list=ontology_signature, ontology=self.ontology,
+                                                      exclude_deprecated=exclude_deprecated, term_type=term_type,
+                                                      include_related_synonyms=include_related_synonyms,
+                                                      include_broad_synonyms=include_broad_synonyms)
         end = time.time()
         self.logger.info("...done: collected %i ontology terms (collection time: %.2fs)", len(ontology_terms),
                          end - start)
         return ontology_terms
-
-    def filter_terms(self, onto_terms, iris=(), excl_deprecated=False, term_type=OntologyTermType.ANY):
-        return filter_terms(onto_terms, iris, excl_deprecated, term_type)
 
     def _get_ontology_signature(self, ontology):
         signature = list(ontology.classes())
@@ -60,7 +65,8 @@ class OntologyTermCollector:
             signature.extend(list(imported_ontology.properties()))
         return signature
 
-    def _get_ontology_terms(self, term_list, ontology, exclude_deprecated, term_type):
+    def _get_ontology_terms(self, term_list, ontology, exclude_deprecated, term_type,
+                            include_related_synonyms=False, include_broad_synonyms=False):
         ontology_terms = dict()
         for ontology_term in term_list:
             # Parse if should include ontology classes, properties, or both
@@ -69,7 +75,8 @@ class OntologyTermCollector:
                 if (exclude_deprecated and not deprecated[ontology_term]) or (not exclude_deprecated):
                     iri = ontology_term.iri
                     labels = self._get_labels(ontology_term)
-                    synonyms = self._get_synonyms(ontology_term)
+                    synonyms = self._get_synonyms(ontology_term, include_related_synonyms=include_related_synonyms,
+                                                  include_broad_synonyms=include_broad_synonyms)
                     named_parents, complex_parents = self._get_parents(ontology_term)
                     children = self._get_children(ontology_term, ontology)
                     instances = self._get_instances(ontology_term, ontology)
@@ -82,11 +89,12 @@ class OntologyTermCollector:
                     else:
                         owl_term_type = "undetermined"
                         self.logger.warning("Term has undetermined type %s %s", iri, labels)
-                    term_details = OntologyTerm(iri, labels, definitions=definitions, synonyms=synonyms,
-                                                parents=named_parents, children=children, instances=instances,
-                                                restrictions=complex_parents, deprecated=is_deprecated,
-                                                term_type=owl_term_type)
-                    ontology_terms[iri] = term_details
+                    if owl_term_type != "undetermined":
+                        term_details = OntologyTerm(iri, labels, definitions=definitions, synonyms=synonyms,
+                                                    parents=named_parents, children=children, instances=instances,
+                                                    restrictions=complex_parents, deprecated=is_deprecated,
+                                                    term_type=owl_term_type)
+                        ontology_terms[iri] = term_details
                 else:
                     self.logger.debug("Excluding deprecated ontology term: %s", ontology_term.iri)
         return ontology_terms
@@ -358,7 +366,7 @@ class OntologyTermCollector:
         self.logger.info("Reasoning over ontology...")
         start = time.time()
         with ontology:  # entailments will be added to this ontology
-            sync_reasoner(infer_property_values=True)
+            sync_reasoner(infer_property_values=True, ignore_unsupported_datatypes=True)
         end = time.time()
         self.logger.info("...done (reasoning time: %.2fs)", end - start)
 
