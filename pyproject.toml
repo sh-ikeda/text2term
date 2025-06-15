@@ -50,7 +50,7 @@ packages = ["text2term"]
 include-package-data = true
 
 [tool.coverage.run]
-omit = ["test/*", "text2term/__main__.py"]
+omit = ["test/*", "**/__main__.py"]
 
 [build-system]
 requires = ["setuptools>=80.8", "wheel"]
