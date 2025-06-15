@@ -1,5 +1,4 @@
 import os
-import uuid
 import tempfile
 import unittest
 import pandas as pd
@@ -9,7 +8,9 @@ from text2term import OntologyTermType, onto_utils
 from text2term import Mapper
 from text2term import OntologyTermCollector
 from text2term.bioportal_mapper import BioPortalAnnotatorMapper
+from text2term.syntactic_mapper import SyntacticMapper
 from text2term.zooma_mapper import ZoomaMapper
+from owlready2 import EntityClass, Nothing, IRIS
 
 pd.set_option('display.max_columns', None)
 
@@ -95,7 +96,8 @@ class Text2TermTestSuite(unittest.TestCase):
     def test_caching_ontology_from_url(self):
         # Test caching an ontology loaded from a URL
         print("Test caching an ontology loaded from a URL...")
-        efo_cache = text2term.cache_ontology(ontology_url=self.EFO_URL, ontology_acronym="EFO", cache_folder=self.TEST_CACHE_FOLDER)
+        efo_cache = text2term.cache_ontology(ontology_url=self.EFO_URL, ontology_acronym="EFO",
+                                             cache_folder=self.TEST_CACHE_FOLDER)
         print(f"Cache exists: {efo_cache.cache_exists()}\n")
         assert efo_cache.cache_exists() is True
 
@@ -107,7 +109,8 @@ class Text2TermTestSuite(unittest.TestCase):
     def test_caching_ontology_from_acronym(self):
         # Test caching an ontology by resolving its acronym using bioregistry
         print("Test caching an ontology by resolving its acronym using bioregistry...")
-        clo_cache = text2term.cache_ontology(ontology_url="CLO", ontology_acronym="CLO", cache_folder=self.TEST_CACHE_FOLDER)
+        clo_cache = text2term.cache_ontology(ontology_url="CLO", ontology_acronym="CLO",
+                                             cache_folder=self.TEST_CACHE_FOLDER)
         print(f"Cache exists: {clo_cache.cache_exists()}\n")
         assert clo_cache.cache_exists() is True
 
@@ -139,7 +142,8 @@ class Text2TermTestSuite(unittest.TestCase):
         # Test mapping a list of terms to EFO loaded from cache
         print("Test mapping a list of terms to EFO loaded from cache...")
         mappings_efo_cache = text2term.map_terms(["asthma", "disease location", "food allergy"], target_ontology="EFO",
-                                                 use_cache=True, term_type=OntologyTermType.ANY, cache_folder=self.TEST_CACHE_FOLDER)
+                                                 use_cache=True, term_type=OntologyTermType.ANY,
+                                                 cache_folder=self.TEST_CACHE_FOLDER)
         print(f"{mappings_efo_cache}\n")
         assert mappings_efo_cache.size > 0
 
@@ -162,14 +166,22 @@ class Text2TermTestSuite(unittest.TestCase):
         # Test mapping a list of terms to cached EFO using Jaro-Winkler syntactic similarity metric
         print("Test mapping a list of terms to cached ontology using Jaro-Winkler syntactic similarity metric...")
         df = text2term.map_terms(["asthma", "disease location", "food allergy"], "EFO", use_cache=True,
-                                 mapper=text2term.Mapper.JARO_WINKLER, term_type=OntologyTermType.ANY, cache_folder=self.TEST_CACHE_FOLDER)
+                                 mapper=text2term.Mapper.JARO_WINKLER, term_type=OntologyTermType.ANY,
+                                 cache_folder=self.TEST_CACHE_FOLDER)
         print(f"{df}\n")
         assert df.size > 0
 
+    def test_syntactic_mappers(self):
+        mapper = SyntacticMapper(())
+        for m in [Mapper.LEVENSHTEIN, Mapper.JARO, Mapper.JARO_WINKLER, Mapper.INDEL, Mapper.FUZZY, Mapper.JACCARD]:
+            score = mapper.compare('heart', 'hearts', mapper=m)
+            score_2 = mapper.compare('heart', 'lung', mapper=m)
+            self.assertTrue(0.8 <= score <= 1.0)
+            self.assertTrue(0.0 <= score_2 <= 0.1)
+
     def test_mapping_using_ontology_acronym(self):
         # Test mapping a list of terms by specifying the target ontology acronym, which gets resolved by bioregistry
-        print(
-            "Test mapping a list of terms to EFO by specifying the ontology acronym, which gets resolved by bioregistry")
+        print("Test mapping a list of terms to EFO by specifying an ontology acronym that gets resolved by bioregistry")
         df2 = text2term.map_terms(["contains", "asthma"], "MONDO", term_type=OntologyTermType.CLASS)
         print(f"{df2}\n")
         assert df2.size > 0
@@ -333,38 +345,6 @@ class Text2TermTestSuite(unittest.TestCase):
         with self.assertRaises(Exception):
             bp_mapper._do_get_request(request_url="http://data.bioontology.org/annotatorBad")
 
-    def test_term_collector(self):
-        expected_nr_efo_terms = 50867
-        efo_term_collector = OntologyTermCollector(ontology_iri=self.EFO_URL)
-        terms = efo_term_collector.get_ontology_terms()
-        assert len(terms) == expected_nr_efo_terms
-
-    def test_term_collector_classes_only(self):
-        expected_nr_efo_classes = 50643
-        efo_term_collector = OntologyTermCollector(ontology_iri=self.EFO_URL)
-        terms = efo_term_collector.get_ontology_terms(term_type=OntologyTermType.CLASS)
-        assert len(terms) == expected_nr_efo_classes
-
-    def test_term_collector_properties_only(self):
-        expected_nr_efo_properties = 224
-        efo_term_collector = OntologyTermCollector(ontology_iri=self.EFO_URL)
-        terms = efo_term_collector.get_ontology_terms(term_type=OntologyTermType.PROPERTY)
-        assert len(terms) == expected_nr_efo_properties
-
-    def test_term_collector_iri_limit(self):
-        efo_base_iri = "http://www.ebi.ac.uk/efo/"
-        expected_nr_terms_with_efo_iri = 17383
-        efo_term_collector = OntologyTermCollector(ontology_iri=self.EFO_URL)
-        terms = efo_term_collector.get_ontology_terms(base_iris=[efo_base_iri], term_type=OntologyTermType.ANY)
-        assert len(terms) == expected_nr_terms_with_efo_iri
-
-    def test_term_collector_iri_limit_properties_only(self):
-        efo_base_iri = "http://www.ebi.ac.uk/efo/"
-        expected_nr_properties_with_efo_iri = 29
-        efo_term_collector = OntologyTermCollector(ontology_iri=self.EFO_URL)
-        terms = efo_term_collector.get_ontology_terms(base_iris=[efo_base_iri], term_type=OntologyTermType.PROPERTY)
-        assert len(terms) == expected_nr_properties_with_efo_iri
-
     def test_mapping_with_min_score_filter(self):
         self.ensure_cache_exists("EFO", self.EFO_URL)
         min_score = 0.6
@@ -434,7 +414,82 @@ class Text2TermTestSuite(unittest.TestCase):
 
     def ensure_cache_exists(self, ontology_name, ontology_url):
         if not text2term.cache_exists(ontology_name, cache_folder=self.TEST_CACHE_FOLDER):
-            text2term.cache_ontology(ontology_url=ontology_url, ontology_acronym=ontology_name, cache_folder=self.TEST_CACHE_FOLDER)
+            text2term.cache_ontology(ontology_url=ontology_url, ontology_acronym=ontology_name,
+                                     cache_folder=self.TEST_CACHE_FOLDER)
+
+
+class OntologyTermCollectorTestSuite(unittest.TestCase):
+
+    def setUp(self):
+        self.collector = OntologyTermCollector("test_ontology.owl", use_reasoning=True)
+        self.efo_url = "https://github.com/EBISPOT/efo/releases/download/v3.57.0/efo.owl"
+        self.efo_collector = OntologyTermCollector(ontology_iri=self.efo_url)
+
+    def tearDown(self):
+        self.collector.close()
+
+    def test_collect_terms(self):
+        expected_nr_efo_terms = 50867
+        terms = self.efo_collector.get_ontology_terms()
+        assert len(terms) == expected_nr_efo_terms
+
+    def test_collect_classes_only(self):
+        expected_nr_efo_classes = 50643
+        terms = self.efo_collector.get_ontology_terms(term_type=OntologyTermType.CLASS)
+        assert len(terms) == expected_nr_efo_classes
+
+    def test_collect_properties_only(self):
+        expected_nr_efo_properties = 224
+        terms = self.efo_collector.get_ontology_terms(term_type=OntologyTermType.PROPERTY)
+        assert len(terms) == expected_nr_efo_properties
+
+    def test_collect_terms_limited_by_iri(self):
+        efo_base_iri = "http://www.ebi.ac.uk/efo/"
+        expected_nr_terms_with_efo_iri = 17382
+        terms = self.efo_collector.get_ontology_terms(base_iris=[efo_base_iri], term_type=OntologyTermType.ANY)
+        assert len(terms) == expected_nr_terms_with_efo_iri
+
+    def test_collect_properties_limited_by_iri(self):
+        efo_base_iri = "http://www.ebi.ac.uk/efo/"
+        expected_nr_properties_with_efo_iri = 29
+        terms = self.efo_collector.get_ontology_terms(base_iris=[efo_base_iri], term_type=OntologyTermType.PROPERTY)
+        assert len(terms) == expected_nr_properties_with_efo_iri
+
+    def test_collect_terms_excluding_deprecated(self):
+        terms = self.collector.get_ontology_terms(exclude_deprecated=True, base_iris=("https://text2term.ontology/",))
+        self.assertTrue(len(terms) == 1)
+
+    def test_collect_terms_including_broad_synonyms(self):
+        terms = self.collector.get_ontology_terms(exclude_deprecated=True, base_iris=("https://text2term.ontology/",),
+                                                  include_broad_synonyms=True)
+        self.assertTrue(any("Seafood Pizza" in term.synonyms for term in terms.values()))
+
+    def test_collect_terms_including_narrow_synonyms(self):
+        terms = self.collector.get_ontology_terms(exclude_deprecated=True, base_iris=("https://text2term.ontology/",),
+                                                  include_related_synonyms=True)
+        self.assertTrue(any("Fish Pizza" in term.synonyms for term in terms.values()))
+
+    def test_filter_terms(self):
+        terms = self.collector.get_ontology_terms()
+        filtered = text2term.filter_terms(terms, iris="https://text2term.ontology/", excl_deprecated=False,
+                                          term_type=OntologyTermType.CLASS)
+        self.assertTrue(len(filtered) == 2)
+        for term in filtered.values():
+            self.assertEqual(term.term_type, OntologyTermType.CLASS)
+
+    def test_filter_terms_invalid_type(self):
+        terms = self.collector.get_ontology_terms()
+        with self.assertRaises(ValueError):
+            text2term.filter_terms(terms, term_type="invalid")
+
+    def test_get_ontology_signature(self):
+        sig = self.collector._get_ontology_signature(self.collector.ontology)
+        self.assertTrue(all(isinstance(e, EntityClass) for e in sig))
+
+    def test_classify_ontology(self):
+        self.collector._classify_ontology(self.collector.ontology)
+        test_term = IRIS["https://text2term.ontology/test/VanillaIceCream"]
+        self.assertTrue(Nothing in test_term.equivalent_to)
 
 
 class OntoUtilsTestSuite(unittest.TestCase):
