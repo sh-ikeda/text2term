@@ -51,7 +51,7 @@ df = text2term.map_terms(source_terms=["asthma", "acute bronchitis"],
 
 There is also support for file-based input, for example a file containing a list of strings:
 ```python
-df = text2term.map_terms(source_terms="test/unstruct_terms.txt", 
+df = text2term.map_terms(source_terms="test/test_input.txt", 
                          target_ontology="http://purl.obolibrary.org/obo/mondo.owl")
 ```
 
@@ -118,44 +118,44 @@ python text2term --help
 
 The basic use of text2term requires a `source` file containing the terms to map to a given `target` ontology:  
 ```shell
-python text2term -s test/unstruct_terms.txt -t http://purl.obolibrary.org/obo/mondo.owl
+python text2term -s test/test_input.txt -t http://purl.obolibrary.org/obo/mondo.owl
 ```
 
 ---
 Map to a local ontology and specify an output file where the mappings should be saved using `-o`:  
 ```shell
-python text2term -s test/unstruct_terms.txt -t test/mondo.owl -o test/mymappings.csv
+python text2term -s test/test_input.txt -t test/mondo.owl -o test/mymappings.csv
 ```
 
 ---
 Set the minimum acceptable similarity score for mapping each given term to an ontology term using `-min`:  
 ```shell
-python text2term -s test/unstruct_terms.txt -t test/mondo.owl -min 0.8
+python text2term -s test/test_input.txt -t test/mondo.owl -min 0.8
 ```
 The mapped terms returned will have been determined to be 0.8 similar to their source terms in a 0-1 scale.  
 
 ---
 Exclude deprecated ontology terms (declared as such via *owl:deprecated true*) using `-d`:  
 ```shell
-python text2term -s test/unstruct_terms.txt -t test/mondo.owl -d
+python text2term -s test/test_input.txt -t test/mondo.owl -d
 ```
 
 ---
 Limit search to only terms whose IRIs start with any IRI given in a list specified using `-iris`:  
 ```shell
-python text2term.py -s test/unstruct_terms.txt -t test/mondo.owl -iris http://purl.obolibrary.org/obo/mondo,http://identifiers.org/hgnc
+python text2term.py -s test/test_input.txt -t test/mondo.owl -iris http://purl.obolibrary.org/obo/mondo,http://identifiers.org/hgnc
 ```
 While MONDO uses terms from other ontologies such as CHEBI and Uberon, the tool only considers terms whose IRIs start either with "http://purl.obolibrary.org/obo/mondo" or "http://identifiers.org/hgnc".
 
 ---
 Cache an ontology for repeated use by running the tool while instructing it to cache the ontology via `-c <name>`:
 ```shell
-python text2term -s test/unstruct_terms.txt -t http://purl.obolibrary.org/obo/mondo.owl -c MONDO
+python text2term -s test/test_input.txt -t http://purl.obolibrary.org/obo/mondo.owl -c MONDO
 ```
 
 Now the ontology is cached and we can refer to it as the target ontology using the name given beforehand: 
 ```shell
-python text2term -s test/unstruct_terms.txt -t MONDO
+python text2term -s test/test_input.txt -t MONDO
 ```
 
 

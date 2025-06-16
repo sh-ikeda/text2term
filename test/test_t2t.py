@@ -27,6 +27,7 @@ class Text2TermTestSuite(unittest.TestCase):
         cls.MAPPING_SCORE_COLUMN = "Mapping Score"
         cls.TAGS_COLUMN = "Tags"
         cls.TEST_CACHE_FOLDER = ".test_cache"
+        cls.TEST_FOLDER = os.path.dirname(os.path.abspath(__file__))
         
         # Configure the SSL verification to be disabled
         if hasattr(onto_cache, 'disable_ssl_verification'):
@@ -82,15 +83,23 @@ class Text2TermTestSuite(unittest.TestCase):
                 f.write("EFO,https://github.com/EBISPOT/efo/releases/download/v3.57.0/efo.owl\n")
                 f.write("CLO,http://purl.obolibrary.org/obo/clo.owl\n")
             print(f"Created sample ontologies file: {ontologies_file}")
-        
-        # Create simple_preprocess.txt for the preprocessing test
-        preprocess_file = "simple_preprocess.txt"
-        if not os.path.exists(preprocess_file):
-            with open(preprocess_file, 'w') as f:
+
+        # Create test_input_with_tags.txt for the preprocessing test
+        test_input_file_path = os.path.join(cls.TEST_FOLDER, "test_input_with_tags.txt")
+        if not os.path.exists(test_input_file_path):
+            with open(test_input_file_path, 'w') as f:
                 f.write("asthma;:;disease\n")
                 f.write("protein level;:;important\n")
-            print(f"Created sample preprocessing file: {preprocess_file}")
-        
+            print(f"Created sample input file: {test_input_file_path}")
+        cls.TEST_INPUT_FILEPATH = test_input_file_path
+
+        test_templates_file_path = os.path.join(cls.TEST_FOLDER, "test_templates.txt")
+        if not os.path.exists(test_templates_file_path):
+            with open(test_templates_file_path, 'w') as f:
+                f.write("(.*) [Nn][Oo][Ss]\n")
+                f.write("(.*) due to [A-z 0-9]+\n")
+            print(f"Created sample template file: {test_templates_file_path}")
+        cls.TEST_TEMPLATES_FILEPATH = test_templates_file_path
         print("Test environment setup complete")
 
     def test_caching_ontology_from_url(self):
@@ -179,6 +188,11 @@ class Text2TermTestSuite(unittest.TestCase):
             self.assertTrue(0.8 <= score <= 1.0)
             self.assertTrue(0.0 <= score_2 <= 0.1)
 
+    def test_syntactic_mapper_inexistent(self):
+        mapper = SyntacticMapper(())
+        with self.assertRaises(ValueError):
+            mapper.compare("heart", "hearts", mapper="mymapper")
+
     def test_mapping_using_ontology_acronym(self):
         # Test mapping a list of terms by specifying the target ontology acronym, which gets resolved by bioregistry
         print("Test mapping a list of terms to EFO by specifying an ontology acronym that gets resolved by bioregistry")
@@ -203,15 +217,7 @@ class Text2TermTestSuite(unittest.TestCase):
         self.ensure_cache_exists("EFO", self.EFO_URL)
         # Test processing tagged terms where the tags are provided in a file
         print("Test processing tagged terms where the tags are provided in a file...")
-        
-        # Ensure the file exists before trying to use it
-        preprocess_file = "simple_preprocess.txt"
-        if not os.path.exists(preprocess_file):
-            with open(preprocess_file, 'w') as f:
-                f.write("asthma;:;disease\n")
-                f.write("protein level;:;important\n")
-
-        tagged_terms = text2term.preprocess_tagged_terms(preprocess_file)
+        tagged_terms = text2term.preprocess_tagged_terms(file_path=self.TEST_INPUT_FILEPATH)
         df4 = text2term.map_terms(tagged_terms, target_ontology="EFO", use_cache=True, incl_unmapped=True,
                                   cache_folder=self.TEST_CACHE_FOLDER)
         print(f"{df4}\n")
@@ -223,15 +229,8 @@ class Text2TermTestSuite(unittest.TestCase):
         self.ensure_cache_exists("EFO", self.EFO_URL)
         # Test processing tagged terms where the tags are provided in a file
         print("Test processing tagged terms where the tags are provided in a file...")
-
-        # Ensure the file exists before trying to use it
-        preprocess_file = "simple_preprocess.txt"
-        if not os.path.exists(preprocess_file):
-            with open(preprocess_file, 'w') as f:
-                f.write("asthma;:;disease\n")
-                f.write("protein level;:;important\n")
-
-        tagged_terms = text2term.preprocess_tagged_terms(preprocess_file, template_path="test_templates.txt")
+        tagged_terms = text2term.preprocess_tagged_terms(file_path=self.TEST_INPUT_FILEPATH,
+                                                         template_path=self.TEST_TEMPLATES_FILEPATH)
         df = text2term.map_terms(tagged_terms, target_ontology="EFO", use_cache=True, incl_unmapped=True,
                                  cache_folder=self.TEST_CACHE_FOLDER)
         print(f"{df}\n")
@@ -243,7 +242,7 @@ class Text2TermTestSuite(unittest.TestCase):
 
     def test_preprocessing_terms(self):
         input_terms = ['Hypertension NOS', 'Diabetes mellitus due to underlying condition']
-        result = text2term.preprocess_terms(terms=input_terms, template_path='test_templates.txt')
+        result = text2term.preprocess_terms(terms=input_terms, template_path=self.TEST_TEMPLATES_FILEPATH)
         expected = {
             'Hypertension NOS': 'Hypertension',
             'Diabetes mellitus due to underlying condition': 'Diabetes mellitus'
@@ -253,7 +252,8 @@ class Text2TermTestSuite(unittest.TestCase):
     def test_preprocessing_terms_and_dedupe(self):
         input_terms = ['Hypertension NOS', 'Diabetes mellitus due to underlying condition',
                        'Hypertension due to unspecified condition', 'Hypertension']
-        result = text2term.preprocess_terms(terms=input_terms, template_path='test_templates.txt', rem_duplicates=True)
+        result = text2term.preprocess_terms(terms=input_terms, template_path=self.TEST_TEMPLATES_FILEPATH,
+                                            rem_duplicates=True)
         expected = {
             'Hypertension': 'Hypertension',
             'Diabetes mellitus due to underlying condition': 'Diabetes mellitus'
@@ -262,8 +262,8 @@ class Text2TermTestSuite(unittest.TestCase):
 
     def test_preprocessing_blocklisted_terms(self):
         terms = ['Hypertension', 'Patient ID', 'Admission Date']
-        blocklist_path = 'test_blocklist.txt'  # This file should contain 'Common Cold'
-        result = text2term.preprocess_terms(terms, template_path="", blocklist_path=blocklist_path)
+        blocklist_path = os.path.join(self.TEST_FOLDER, 'test_blocklist.txt')  # This file should contain 'Common Cold'
+        result = text2term.preprocess_terms(terms=terms, template_path="", blocklist_path=blocklist_path)
         expected = {
             'Hypertension': 'Hypertension'
         }
@@ -421,7 +421,8 @@ class Text2TermTestSuite(unittest.TestCase):
 class OntologyTermCollectorTestSuite(unittest.TestCase):
 
     def setUp(self):
-        self.collector = OntologyTermCollector("test_ontology.owl", use_reasoning=True)
+        ontology_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "test_ontology.owl")
+        self.collector = OntologyTermCollector(ontology_file, use_reasoning=True)
         self.efo_url = "https://github.com/EBISPOT/efo/releases/download/v3.57.0/efo.owl"
         self.efo_collector = OntologyTermCollector(ontology_iri=self.efo_url)
 
