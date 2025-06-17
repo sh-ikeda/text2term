@@ -123,6 +123,12 @@ class Text2TermTestSuite(unittest.TestCase):
         print(f"Cache exists: {clo_cache.cache_exists()}\n")
         assert clo_cache.cache_exists() is True
 
+    def test_cache_clearing(self):
+        self.ensure_cache_exists(ontology_name="CLO", ontology_url="http://purl.obolibrary.org/obo/clo.owl")
+        assert text2term.cache_exists(ontology_acronym="CLO", cache_folder=self.TEST_CACHE_FOLDER) is True
+        text2term.clear_cache(ontology_acronym="CLO", cache_folder=self.TEST_CACHE_FOLDER)
+        assert text2term.cache_exists(ontology_acronym="CLO", cache_folder=self.TEST_CACHE_FOLDER) is False
+
     def test_caching_ontology_set(self):
         # Find ontologies.csv file in possible locations
         resources_paths = [
