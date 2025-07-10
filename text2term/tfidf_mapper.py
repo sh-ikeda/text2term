@@ -26,6 +26,7 @@ class TFIDFMapper:
         :param min_score: The lower-bound threshold for keeping a candidate term mapping, between 0-1.
                             Default set to 0, so consider all candidates
         :param ngram_length: The gram length n for the string tokenizer
+        :param keep_sep_char: If true, do not replace non-alphanumeric charcters
         """
         source_terms_norm = onto_utils.normalize_list(source_terms, keep_sep_char=keep_sep_char)
         vectorizer = self._tokenize(source_terms_norm, self.target_labels, n=ngram_length)

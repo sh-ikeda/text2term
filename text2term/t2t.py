@@ -206,7 +206,7 @@ def _load_ontology(ontology, iris, exclude_deprecated, use_cache=False, term_typ
 
 
 def _do_mapping(source_terms, source_term_ids, ontology_terms, mapper, max_mappings, min_score, tags, incl_unmapped,
-                bioportal_apikey, keep_sep_char):
+                bioportal_apikey, keep_sep_char=False):
     to_map, tags = _process_tags(source_terms, tags)
     start = time.time()
     if mapper == Mapper.TFIDF:
