@@ -32,7 +32,8 @@ LOGGER = onto_utils.get_logger(__name__, level=logging.INFO)
 def map_terms(source_terms, target_ontology, base_iris=(), csv_columns=(), excl_deprecated=False, max_mappings=3,
               min_score=0.3, mapper=Mapper.TFIDF, output_file='', save_graphs=False, save_mappings=False,
               source_terms_ids=(), separator=',', use_cache=False, term_type=OntologyTermType.CLASS,
-              incl_unmapped=False, excl_metadata=False, bioportal_apikey="", cache_folder=".cache"):
+              incl_unmapped=False, excl_metadata=False, bioportal_apikey="", cache_folder=".cache",
+              keep_sep_char=False):
     """
     Maps the terms in the given list to the specified target ontology.
 
@@ -108,7 +109,7 @@ def map_terms(source_terms, target_ontology, base_iris=(), csv_columns=(), excl_
     # Run the mapper
     LOGGER.info(f"Mapping {len(source_terms)} source terms to {target_ontology}")
     mappings_df = _do_mapping(source_terms, source_terms_ids, target_terms, mapper, max_mappings, min_score, tags,
-                              incl_unmapped, bioportal_apikey)
+                              incl_unmapped, bioportal_apikey, keep_sep_char)
     if not mappings_df.empty:
         mappings_df["Mapping Score"] = mappings_df["Mapping Score"].astype(float).round(decimals=3)
     if save_mappings:
@@ -205,12 +206,12 @@ def _load_ontology(ontology, iris, exclude_deprecated, use_cache=False, term_typ
 
 
 def _do_mapping(source_terms, source_term_ids, ontology_terms, mapper, max_mappings, min_score, tags, incl_unmapped,
-                bioportal_apikey):
+                bioportal_apikey, keep_sep_char):
     to_map, tags = _process_tags(source_terms, tags)
     start = time.time()
     if mapper == Mapper.TFIDF:
         term_mapper = TFIDFMapper(ontology_terms)
-        mappings_df = term_mapper.map(to_map, source_term_ids, max_mappings=max_mappings, min_score=min_score)
+        mappings_df = term_mapper.map(to_map, source_term_ids, max_mappings=max_mappings, min_score=min_score, keep_sep_char=keep_sep_char)
     elif mapper == Mapper.ZOOMA:
         term_mapper = ZoomaMapper()
         mappings_df = term_mapper.map(to_map, source_term_ids, ontologies=ontology_terms, max_mappings=max_mappings)

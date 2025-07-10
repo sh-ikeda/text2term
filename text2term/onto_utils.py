@@ -24,20 +24,23 @@ QUANTITY_WORDS = {'hourly', 'daily', 'weekly', 'monthly', 'yearly', 'frequently'
                   'percentage', 'abundance', 'proportion', 'content', 'average', 'prevalence', 'mean', 'ratio'}
 
 
-def normalize_list(token_list):
+def normalize_list(token_list, keep_sep_char=False):
     normalized_token_list = []
     for token in token_list:
-        normalized_token_list.append(normalize(token))
+        normalized_token_list.append(normalize(token, keep_sep_char))
     return normalized_token_list
 
 
-def normalize(token):
+def normalize(token, keep_sep_char=False):
     """
     Normalizes a given string by converting to lower case, removing non-word characters, stop words, white space
     :param token: Text to be normalized
     :return: Normalized string
     """
-    token = strip_non_alphanum(token).lower()
+    if keep_sep_char:
+        token = token.lower()
+    else:
+        token = strip_non_alphanum(token).lower()
     token = token.replace("_", " ")
     token = " ".join(w for w in token.split() if w not in STOP_WORDS)
     token = strip_multiple_whitespaces(token)

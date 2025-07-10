@@ -45,6 +45,8 @@ if __name__ == "__main__":
                         help="BioPortal API Key to use along with the BioPortal mapper option")
     parser.add_argument('-md', "--excl_metadata", required=False, default=False, action="store_true",
                         help="Exclude metadata in the output file")
+    parser.add_argument("-k", "--keep_sep_char", required=False, default=False, action="store_true",
+                        help="Do not replace non-alphanumeric characters with space before tokenization")
 
     arguments = parser.parse_args()
     if not os.path.exists(arguments.source):
@@ -66,4 +68,4 @@ if __name__ == "__main__":
               min_score=arguments.min_score, base_iris=iris, save_graphs=arguments.save_term_graphs,
               save_mappings=True, separator=arguments.separator, use_cache=cache_exists(target),
               term_type=arguments.term_type, incl_unmapped=arguments.incl_unmapped, excl_metadata=arguments.excl_metadata,
-              bioportal_apikey=arguments.bioportal_apikey)
+              bioportal_apikey=arguments.bioportal_apikey, keep_sep_char=arguments.keep_sep_char)
