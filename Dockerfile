@@ -1,7 +1,4 @@
-FROM python:3.9.23-alpine3.22
-
-RUN apk update && \
-    apk add --no-cache gcc libc-dev g++ build-base linux-headers
+FROM python:3.9.23-slim
 
 RUN mkdir /app
 COPY . /app/text2term
