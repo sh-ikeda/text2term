@@ -4,7 +4,7 @@ import pandas as pd
 import bioregistry
 import shortuuid
 from owlready2 import *
-from gensim.parsing import strip_non_alphanum, strip_multiple_whitespaces
+# from gensim.parsing import strip_non_alphanum, strip_multiple_whitespaces
 
 
 BASE_IRI = "https://text2term.utils/"
@@ -163,6 +163,28 @@ def generate_iri(uuid_length=10):
 
 def generate_iris(quantity, uuid_length=10):
     return [generate_iri(uuid_length=uuid_length) for _ in range(quantity)]
+
+
+def any2unicode(text, encoding='utf8', errors='strict'):
+    if isinstance(text, str):
+        return text
+    return str(text, encoding, errors=errors)
+
+
+to_unicode = any2unicode
+
+RE_NONALPHA = re.compile(r"\W", re.UNICODE)
+RE_WHITESPACE = re.compile(r"(\s)+", re.UNICODE)
+
+
+def strip_non_alphanum(s):
+    s = to_unicode(s)
+    return RE_NONALPHA.sub(" ", s)
+
+
+def strip_multiple_whitespaces(s):
+    s = to_unicode(s)
+    return RE_WHITESPACE.sub(" ", s)
 
 
 OBO_BASE_IRI = "http://purl.obolibrary.org/obo/"
